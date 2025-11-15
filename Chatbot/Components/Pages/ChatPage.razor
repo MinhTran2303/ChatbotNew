@@ -15,10 +15,6 @@
                 <span class="sf-badge">2.0 Flash</span>
             </div>
         </div>
-        <div class="sf-header-actions">
-            <a class="sf-link" href="https://learn.microsoft.com/aspnet/core/" target="_blank" rel="noopener noreferrer">About</a>
-            <button class="sf-signin">Sign in</button>
-        </div>
     </header>
 
     <main class="sf-main">
@@ -68,12 +64,6 @@
                 </div>
             </div>
 
-            <div class="sf-suggestions">
-                <button class="sf-chip" @onclick='() => QuickAsk("Tạo lịch bảo trì cho dây chuyền sản xuất tuần này")'>Lịch bảo trì dây chuyền</button>
-                <button class="sf-chip" @onclick='() => QuickAsk("Phân tích hiệu suất ca làm việc hôm nay")'>Hiệu suất ca hôm nay</button>
-                <button class="sf-chip" @onclick='() => QuickAsk("Gợi ý tối ưu hóa luồng hàng trong kho")'>Tối ưu luồng hàng</button>
-                <button class="sf-chip" @onclick='() => QuickAsk("Soạn báo cáo sản lượng tự động")'>Báo cáo sản lượng</button>
-            </div>
         </section>
     </main>
 </div>
@@ -133,9 +123,4 @@
         await chatBoxRef.FocusAsync();
     }
 
-    private async Task QuickAsk(string text)
-    {
-        UserInput = text;
-        await SendMessage();
-    }
 }

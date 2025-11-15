@@ -27,7 +27,6 @@ body {
 .sf-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     padding: 2.25rem 0 1.5rem;
 }
 
@@ -63,40 +62,6 @@ body {
     text-transform: uppercase;
 }
 
-.sf-header-actions {
-    display: flex;
-    align-items: center;
-    gap: 1.35rem;
-}
-
-.sf-link {
-    color: rgba(204, 208, 242, 0.76);
-    font-size: 0.95rem;
-    text-decoration: none;
-    transition: color 0.2s ease;
-}
-
-.sf-link:hover {
-    color: #e5e6ff;
-}
-
-.sf-signin {
-    padding: 0.55rem 1.5rem;
-    border-radius: 999px;
-    border: 1px solid rgba(112, 115, 162, 0.55);
-    background: rgba(22, 24, 36, 0.55);
-    color: var(--sf-text-primary);
-    font-size: 0.95rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-}
-
-.sf-signin:hover {
-    transform: translateY(-1px);
-    border-color: rgba(147, 151, 225, 0.9);
-    box-shadow: 0 12px 28px rgba(14, 16, 32, 0.45);
-}
 
 .sf-main {
     flex: 1;
@@ -298,29 +263,6 @@ body {
     pointer-events: none;
 }
 
-.sf-suggestions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    justify-content: center;
-}
-
-.sf-chip {
-    padding: 0.6rem 1.1rem;
-    border-radius: 999px;
-    border: 1px solid rgba(86, 90, 130, 0.45);
-    background: var(--sf-surface-soft);
-    color: rgba(214, 219, 255, 0.95);
-    font-size: 0.9rem;
-    cursor: pointer;
-    transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
-}
-
-.sf-chip:hover {
-    transform: translateY(-1px);
-    border-color: rgba(147, 151, 225, 0.8);
-    background: rgba(98, 101, 186, 0.65);
-}
 
 @media (max-width: 992px) {
     .sf-shell {
@@ -339,11 +281,6 @@ body {
         gap: 1.25rem;
     }
 
-    .sf-header-actions {
-        width: 100%;
-        justify-content: space-between;
-    }
-
     .sf-hero {
         margin-top: 1.5rem;
     }
@@ -358,12 +295,6 @@ body {
 }
 
 @media (max-width: 520px) {
-    .sf-header-actions {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.75rem;
-    }
-
     .sf-input-row {
         flex-direction: column;
         align-items: stretch;
