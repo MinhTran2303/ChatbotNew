@@ -1,39 +1,81 @@
 ﻿@page "/"
 @using System.Net.Http.Json
 @using System.Text.Json
+@using System.Linq
 @inject HttpClient Http
 
-<link rel="stylesheet" href="css/chat-dark.css" />
+<link rel="stylesheet" href="css/chat.css" />
 
-<div class="chat-wrapper">
-    <div class="chat-header">
-        <img src="favicon.png" alt="bot" class="bot-avatar" />
-        <div class="bot-info">
-            <h3>Smart-Factory Assistant</h3>
-            <div class="status"><span class="dot"></span> Đang hoạt động</div>
-        </div>
-        <button class="close-btn">×</button>
-    </div>
-
- 
-    <div class="chat-body" @ref="chatBoxRef">
-        @foreach (var msg in Messages)
-        {
-            <div class="@(msg.IsUser ? "user-msg" : "bot-msg")">
-                <div class="msg-text">@msg.Text</div>
+<div class="sf-shell">
+    <header class="sf-header">
+        <div class="sf-brand">
+            <img src="favicon.png" alt="Smart-Factory" class="sf-brand-icon" />
+            <div class="sf-brand-copy">
+                <span class="sf-brand-name">Smart-Factory</span>
+                <span class="sf-badge">2.0 Flash</span>
             </div>
-        }
-    </div>
+        </div>
+        <div class="sf-header-actions">
+            <a class="sf-link" href="https://learn.microsoft.com/aspnet/core/" target="_blank" rel="noopener noreferrer">About</a>
+            <button class="sf-signin">Sign in</button>
+        </div>
+    </header>
 
-    <div class="chat-input">
-        <input @bind="UserInput"
-               placeholder="Nhập câu hỏi..."
-               @onkeydown="HandleEnter" />
+    <main class="sf-main">
+        <section class="sf-hero">
+            <p class="sf-hero-eyebrow">Meet</p>
+            <h1 class="sf-hero-title">Meet <span class="sf-gradient-text">Smart-Factory</span>,</h1>
+            <p class="sf-hero-subtitle">your personal AI assistant</p>
+        </section>
 
-        <button class="send-btn" @onclick="SendMessage">
-            <span class="send-icon">➤</span>
-        </button>
-    </div>
+        <section class="sf-interaction">
+            <div class="sf-input-card">
+                <div class="sf-input-row">
+                    <input @bind="UserInput"
+                           placeholder="Ask Smart-Factory"
+                           @onkeydown="HandleEnter" />
+                    <button class="sf-send-btn" @onclick="SendMessage" title="Gửi">
+                        <span class="sf-send-icon">➤</span>
+                    </button>
+                </div>
+
+                <div class="sf-message-area">
+                    <div class="sf-message-stream" @ref="chatBoxRef" tabindex="-1">
+                        @foreach (var msg in Messages)
+                        {
+                            <div class="sf-msg @(msg.IsUser ? "user" : "assistant")">
+                                <div class="sf-avatar @(msg.IsUser ? "user" : "assistant")">
+                                    @if (msg.IsUser)
+                                    {
+                                        <span>😊</span>
+                                    }
+                                    else
+                                    {
+                                        <img src="favicon.png" alt="Smart-Factory" />
+                                    }
+                                </div>
+                                <div class="sf-bubble">@msg.Text</div>
+                            </div>
+                        }
+                    </div>
+
+                    @if (!Messages.Any())
+                    {
+                        <div class="sf-empty-state">
+                            <p>Ask Smart-Factory for production insights, maintenance planning, or workflow automation ideas.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="sf-suggestions">
+                <button class="sf-chip" @onclick="() => QuickAsk(\"Tạo lịch bảo trì cho dây chuyền sản xuất tuần này\")">Lịch bảo trì dây chuyền</button>
+                <button class="sf-chip" @onclick="() => QuickAsk(\"Phân tích hiệu suất ca làm việc hôm nay\")">Hiệu suất ca hôm nay</button>
+                <button class="sf-chip" @onclick="() => QuickAsk(\"Gợi ý tối ưu hóa luồng hàng trong kho\")">Tối ưu luồng hàng</button>
+                <button class="sf-chip" @onclick="() => QuickAsk(\"Soạn báo cáo sản lượng tự động\")">Báo cáo sản lượng</button>
+            </div>
+        </section>
+    </main>
 </div>
 
 @code {
