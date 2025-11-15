@@ -1,0 +1,8 @@
+[
+  {
+    "name": "CuringRoom",
+    "keywords": [ "curing", "oven", "rack" ],
+    "database": "FactoryDB",
+    "prompt": "Services/Modules/CuringRoom/CuringPrompt.txt"
+  }
+]
