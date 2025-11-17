@@ -45,65 +45,82 @@ namespace Chatbot.Services.Modules.CuringRoom
                 using var conn = new OracleConnection(_config.GetConnectionString("SFIS_NVIDIA"));
                 await conn.OpenAsync();
 
-                // Lấy toàn bộ CURING_IN + CURING_OUT trong ngày
                 string sql = @"
-                    SELECT 
-                        TRAY_NO,
-                        MODEL_NAME,
-                        COUNT(SERIAL_NUMBER) AS QTY,
-                        MIN(IN_STATION_TIME) AS START_TIME,
-                        MAX(WIP_GROUP) AS LAST_STATUS
+                    SELECT SERIAL_NUMBER,
+                           MODEL_NAME,
+                           TRAY_NO,
+                           WIP_GROUP,
+                           IN_STATION_TIME
                     FROM SFISM4.R_WIP_TRACKING_T
-                    WHERE WIP_GROUP IN ('CURING_IN','CURING_OUT')
-                    GROUP BY TRAY_NO, MODEL_NAME
-                    ORDER BY TRAY_NO";
+                    WHERE WIP_GROUP IN ('CURING_IN','CURING_OUT')";
 
                 using var cmd = new OracleCommand(sql, conn);
-                using var reader = await cmd.ExecuteReaderAsync();
 
-                var racks = new List<(string Tray, string Model, int Qty, DateTime Start, string Status)>();
-                while (await reader.ReadAsync())
+                var tableWip = new DataTable();
+                using (var reader = await cmd.ExecuteReaderAsync())
                 {
-                    string tray = reader["TRAY_NO"]?.ToString() ?? "N/A";
-                    string model = reader["MODEL_NAME"]?.ToString() ?? "N/A";
-                    int qty = Convert.ToInt32(reader["QTY"]);
-                    DateTime start = Convert.ToDateTime(reader["START_TIME"]);
-                    string status = reader["LAST_STATUS"]?.ToString() ?? "UNKNOWN";
+                    tableWip.Load(reader);
+                }
 
-                    racks.Add((tray, model, qty, start, status));
+                if (tableWip.Rows.Count == 0)
+                {
+                    return "Hiện tại không có rack nào đang hoạt động trong curing.";
+                }
+
+                var trays = tableWip.AsEnumerable()
+                    .Where(a => !string.IsNullOrWhiteSpace(a.Field<string>("TRAY_NO")))
+                    .GroupBy(a => a.Field<string>("TRAY_NO"));
+
+                var racks = new List<(string Tray, string Model, int Qty, string Duration, string StatusText, double Percent)>();
+
+                foreach (var tray in trays)
+                {
+                    var trayData = tray.ToList();
+                    if (!trayData.Any()) continue;
+
+                    DateTime startTime = trayData.Min(a => a.Field<DateTime>("IN_STATION_TIME"));
+                    bool isFinished = trayData.Any(a => string.Equals(a.Field<string>("WIP_GROUP"), "CURING_OUT", StringComparison.OrdinalIgnoreCase));
+                    var (duration, statusText, percent) = CalcCuringTime(startTime, isFinished);
+
+                    racks.Add((
+                        tray.Key?.ToUpper() ?? "N/A",
+                        trayData.First().Field<string>("MODEL_NAME") ?? string.Empty,
+                        trayData.Count,
+                        duration,
+                        statusText,
+                        percent
+                    ));
                 }
 
                 if (!racks.Any())
+                {
                     return "Hiện tại không có rack nào đang hoạt động trong curing.";
+                }
 
                 var sb = new StringBuilder();
 
-                // 🟡 Rack đang chạy
-                var running = racks.Where(r => r.Status == "CURING_IN").ToList();
+                var running = racks.Where(r => r.StatusText == "RUNNING").OrderByDescending(r => r.Percent).ToList();
                 if (running.Any())
                 {
                     sb.AppendLine("🟡 **Các rack đang chạy trong curing:**");
                     foreach (var r in running)
                     {
-                        var (time, statusText, percent) = CalcCuringTime(r.Start);
-                        sb.AppendLine($"• {r.Tray} ({r.Model}) - {r.Qty} pcs ⏱ {time} ({percent:0.0}% hoàn thành)");
+                        sb.AppendLine($"• {r.Tray} ({r.Model}) - {r.Qty} pcs ⏱ {r.Duration} ({r.Percent:0.0}% hoàn thành)");
                     }
                     sb.AppendLine();
                 }
 
-                // ✅ Rack đã hoàn thành
-                var finished = racks.Where(r => r.Status == "CURING_OUT").ToList();
+                var finished = racks.Where(r => r.StatusText == "FINISHED").OrderBy(r => r.Tray).ToList();
                 if (finished.Any())
                 {
                     sb.AppendLine("✅ **Các rack đã hoàn thành curing:**");
                     foreach (var r in finished)
                     {
-                        var (time, statusText, percent) = CalcCuringTime(r.Start, true);
-                        sb.AppendLine($"• {r.Tray} ({r.Model}) - {r.Qty} pcs ✅ {time}");
+                        sb.AppendLine($"• {r.Tray} ({r.Model}) - {r.Qty} pcs ✅ {r.Duration}");
                     }
                 }
 
-                return sb.ToString();
+                return sb.ToString().Trim();
             }
             catch (Exception ex)
             {
