@@ -1,8 +1,33 @@
 [
   {
-    "name": "CuringRoom",
-    "keywords": [ "curing", "oven", "rack" ],
-    "database": "FactoryDB",
-    "prompt": "Services/Modules/CuringRoom/CuringPrompt.txt"
+    "Name": "Curing Room (API)",
+    "Database": "CuringRoom",
+    "ApiUrl": "https://10.220.130.117/newweb/api/nvidia/dashboard/CuringMonitor/GetCuringData",
+    "Keywords": [
+      "tổng quan curing",
+      "pass",
+      "wip",
+      "model pass",
+      "nhiều nhất",
+      "overview curing",
+      "curing dashboard"
+    ],
+    "ServiceType": "api"
+  },
+  {
+    "Name": "Curing Room (SQL)",
+    "Database": "CuringRoom",
+    "ApiUrl": null,
+    "Keywords": [
+      "rack",
+      "tray",
+      "serial",
+      "sensor",
+      "nhiệt độ",
+      "trạng thái curing",
+      "curing-",
+      "rack curing"
+    ],
+    "ServiceType": "sql"
   }
 ]

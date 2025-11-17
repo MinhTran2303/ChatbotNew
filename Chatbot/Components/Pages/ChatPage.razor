@@ -1,7 +1,8 @@
 ﻿@page "/"
+@rendermode InteractiveServer
 @using System.Net.Http.Json
 @using System.Text.Json
-@using System.Linq
+@using Microsoft.AspNetCore.Components.Web
 @inject HttpClient Http
 
 <link rel="stylesheet" href="css/chat.css" />
@@ -12,7 +13,7 @@
             <img src="favicon.png" alt="Smart-Factory" class="sf-brand-icon" />
             <div class="sf-brand-copy">
                 <span class="sf-brand-name">Smart-Factory</span>
-                <span class="sf-badge">2.0 Flash</span>
+                <span class="sf-badge">2.0 FLASH</span>
             </div>
         </div>
     </header>
@@ -28,29 +29,30 @@
             <div class="sf-input-card">
                 <div class="sf-input-row">
                     <input @bind="UserInput"
-                           placeholder="Ask Smart-Factory"
+                           @bind:event="oninput"
+                           placeholder="Nhập câu hỏi cho Smart-Factory..."
                            @onkeydown="HandleEnter" />
-                    <button class="sf-send-btn" @onclick="SendMessage" title="Gửi">
+                    <button type="button" class="sf-send-btn" @onclick="SendMessage" title="Gửi">
                         <span class="sf-send-icon">➤</span>
                     </button>
                 </div>
 
                 <div class="sf-message-area">
-                    <div class="sf-message-stream" @ref="chatBoxRef" tabindex="-1">
+                    <div class="sf-message-stream" @ref="chatBoxRef">
                         @foreach (var msg in Messages)
                         {
                             <div class="sf-msg @(msg.IsUser ? "user" : "assistant")">
                                 <div class="sf-avatar @(msg.IsUser ? "user" : "assistant")">
                                     @if (msg.IsUser)
                                     {
-                                        <span>😊</span>
+                                        <span>👤</span>
                                     }
                                     else
                                     {
-                                        <img src="favicon.png" alt="Smart-Factory" />
+                                        <img src="favicon.png" alt="AI" />
                                     }
                                 </div>
-                                <div class="sf-bubble">@msg.Text</div>
+                                <div class="sf-bubble">@((MarkupString)msg.Text.Replace("\n", "<br/>"))</div>
                             </div>
                         }
                     </div>
@@ -63,7 +65,6 @@
                     }
                 </div>
             </div>
-
         </section>
     </main>
 </div>
@@ -84,16 +85,16 @@
         if (string.IsNullOrWhiteSpace(UserInput))
             return;
 
-        var messageToSend = UserInput.Trim();
-        Messages.Add(new ChatMessage { IsUser = true, Text = messageToSend });
+        var message = UserInput.Trim();
+        Messages.Add(new ChatMessage { IsUser = true, Text = message });
         UserInput = string.Empty;
 
-        Messages.Add(new ChatMessage { IsUser = false, Text = "Đang xử lý..." });
+        Messages.Add(new ChatMessage { IsUser = false, Text = "⏳ Đang xử lý..." });
         StateHasChanged();
 
         try
         {
-            var response = await Http.PostAsJsonAsync("/api/aichat/chat", new { message = messageToSend });
+            var response = await Http.PostAsJsonAsync("https://localhost:7051/api/aichat/chat", new { message });
             var json = await response.Content.ReadFromJsonAsync<JsonElement>();
 
             Messages.RemoveAt(Messages.Count - 1);
@@ -105,6 +106,7 @@
         }
         catch (Exception ex)
         {
+            Messages.RemoveAt(Messages.Count - 1);
             Messages.Add(new ChatMessage { IsUser = false, Text = $"❌ Lỗi: {ex.Message}" });
         }
 
@@ -122,5 +124,4 @@
         await Task.Delay(100);
         await chatBoxRef.FocusAsync();
     }
-
 }

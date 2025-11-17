@@ -1,33 +1,46 @@
 using Chatbot.Components;
 using Chatbot.Services.Core;
+using Chatbot.Services.Modules.CuringRoom;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
-// Thêm h? tr? Blazor UI (Server-side)
+// ------------------ BLAZOR + API CONTROLLER ------------------
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-// Thêm controller ?? dùng API
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// ------------------ ??NG KÝ SERVICE ------------------
+// ------------------ ??NG KÝ CÁC SERVICE ------------------
 
-// D?ch v? lõi Chatbot
-builder.Services.AddSingleton<RouterService>();   // ??c modules.json
-builder.Services.AddScoped<SqlExecutor>();        // Th?c thi SQL
-builder.Services.AddScoped<ApiCaller>();          // G?i API n?i b?
-builder.Services.AddScoped<LlmRouterService>();   // G?i model Ollama
-builder.Services.AddHttpClient();                 // Client dùng chung
+// HttpClient dùng qua IHttpClientFactory (an toàn, không dispose s?m)
+builder.Services.AddHttpClient("DefaultClient", client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(15);
+})
+.ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+{
+    // B? qua l?i SSL cho IP n?i b? (10.x.x.x)
+    ServerCertificateCustomValidationCallback = (sender, cert, chain, errors) => true
+});
 
-// ------------------ XÂY D?NG APP ------------------
+// Core services
+builder.Services.AddScoped<SqlExecutor>();
+builder.Services.AddScoped<ApiCaller>();
+builder.Services.AddScoped<LlmRouterService>();
 
+// Module-specific services
+builder.Services.AddScoped<CuringSqlService>();
+builder.Services.AddScoped<CuringApiService>();
+
+// RouterService ph?i là Scoped ?? t?o scope m?i khi detect module
+builder.Services.AddScoped<RouterService>();
+
+// ------------------ BUILD APP ------------------
 var app = builder.Build();
 
-// ------------------ C?U HÌNH PIPELINE ------------------
-
+// ------------------ CONFIGURE PIPELINE ------------------
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
@@ -35,21 +48,17 @@ if (!app.Environment.IsDevelopment())
 }
 else
 {
-    // Khi ch?y Development (m?c ??nh)
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
-
 app.UseAntiforgery();
 
+app.MapStaticAssets();
+app.MapControllers();
 
-
-app.MapStaticAssets(); 
-app.MapControllers();  
-app.MapRazorComponents<App>() 
+app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
-
 
 app.Run();
