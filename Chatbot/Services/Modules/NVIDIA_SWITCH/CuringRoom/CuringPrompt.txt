@@ -1,0 +1,16 @@
+﻿MODULE: CuringRoom
+Mô tả: Quản lý rack sấy, model đang sấy, sensor nhiệt độ – độ ẩm, WIP, PASS.
+Dữ liệu từ API /CuringMonitoring và SQL StoredProcedure.
+
+INTENT LIST:
+- GetSummary: tổng quan WIP – PASS – model pass
+- GetDisplayedRack: danh sách rack/tray đang hiển thị
+- GetRackStatus: rack RUNNING / FINISHED
+- GetTemperature: đọc sensor nhiệt độ trần
+
+CÂU HỎI VÍ DỤ:
+- Tổng quan phòng curing hôm nay
+- Rack nào đang chạy?
+- Cho tôi model pass nhiều nhất
+- Nhiệt độ phòng sấy bao nhiêu?
+- Rack curing ROOM1 F16

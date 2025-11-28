@@ -155,45 +155,59 @@ namespace Chatbot.Services.Modules.Rack
             if (!root.Value.TryGetProperty("RackDetails", out var arr))
                 return "API không trả về RackDetails.";
 
-            // Tìm đúng rack theo số
+            // ==== Tìm đúng rack ====
             var rack = arr.EnumerateArray()
                 .FirstOrDefault(r =>
-                    r.GetProperty("RackName").GetString()!
+                    (r.TryGetProperty("RackName", out var rn) ? rn.GetString() ?? "" : "")
                     .Replace("RACK ", "") == rackNo);
 
             if (rack.ValueKind == JsonValueKind.Undefined)
                 return $"❌ Không tìm thấy rack {rackNo}.";
 
-            // ======= HEADER SUMMARY =======
-            string nick = rack.GetProperty("NickName").GetString() ?? "";
-            string model = rack.GetProperty("ModelName").GetString() ?? "";
-            int totalPass = rack.GetProperty("Total_Pass").GetInt32();
-            double ut = rack.GetProperty("UT").GetDouble();
-            double yr = rack.GetProperty("YR").GetDouble();
+            // ==== Lấy rack-level fields an toàn ====
+            string product = rack.TryGetProperty("ProductName", out var p1) ? p1.GetString() ?? "" : "";
+            string model = rack.TryGetProperty("ModelName", out var p2) ? p2.GetString() ?? "" : "";
+            int totalPass = rack.TryGetProperty("Total_Pass", out var p3) ? p3.GetInt32() : 0;
+            double ut = rack.TryGetProperty("UT", out var p4) ? p4.GetDouble() : 0;
+            double yr = rack.TryGetProperty("YR", out var p5) ? p5.GetDouble() : 0;
+
+            // Nếu YR bị thiếu
+            if (yr == 0 && rack.TryGetProperty("Input", out var inp) &&
+                          rack.TryGetProperty("Pass", out var pass))
+            {
+                int i = inp.GetInt32();
+                int p = pass.GetInt32();
+                yr = i > 0 ? (double)p / i * 100 : 0;
+            }
 
             var sb = new StringBuilder();
 
-            sb.AppendLine($"📌 **RACK {rackNo}** `[ {nick} ]`");
+            // ===== HEADER =====
+            sb.AppendLine($"📌 **RACK {rackNo}** `[ {product} ]`");
             sb.AppendLine($"📦 **{totalPass} PCS**");
             sb.AppendLine($"- UT: **{ut:0.00}%**");
             sb.AppendLine($"- Model: **{model}**");
             sb.AppendLine($"- Y.R: **{yr:0.##}%**");
 
-            // ======= SLOT DETAILS + COLOR =======
             sb.AppendLine("\n🔧 **Slot Details:**");
 
-            if (rack.TryGetProperty("SlotDetails", out var slots))
+            // ===== SLOT DETAILS =====
+            if (rack.TryGetProperty("SlotDetails", out var slots) &&
+                slots.ValueKind == JsonValueKind.Array)
             {
                 foreach (var s in slots.EnumerateArray())
                 {
-                    string slotNo = s.GetProperty("SlotNumber").GetString() ?? "";
-                    string slotName = s.GetProperty("SlotName").GetString() ?? "";
-                    string status = s.GetProperty("Status").GetString() ?? "";
-                    int input = s.GetProperty("Input").GetInt32();
-                    int totalP = s.GetProperty("Total_Pass").GetInt32();
-                    double yrr = s.GetProperty("YR").GetDouble();
+                    string slotNo = s.TryGetProperty("SlotNumber", out var s1) ? s1.GetString() ?? "" : "";
+                    string slotName = s.TryGetProperty("SlotName", out var s2) ? s2.GetString() ?? "" : "";
 
-                    // ===== MAP ICON MÀU =====
+                    int input = s.TryGetProperty("Input", out var i1) ? i1.GetInt32() : 0;
+                    int totalP = s.TryGetProperty("Total_Pass", out var i2) ? i2.GetInt32() : 0;
+
+                    string status = s.TryGetProperty("Status", out var st) ? st.GetString() ?? "" : "";
+
+                    double yrr = input > 0 ? (double)totalP / input * 100 : 0;
+
+                    // ===== STATUS ICON =====
                     string icon = status switch
                     {
                         "Pass" => "🟢",
@@ -214,6 +228,7 @@ namespace Chatbot.Services.Modules.Rack
             sb.AppendLine(Stamp());
             return sb.ToString();
         }
+
 
 
 

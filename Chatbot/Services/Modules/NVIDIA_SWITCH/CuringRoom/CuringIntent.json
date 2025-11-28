@@ -1,0 +1,29 @@
+﻿{
+  "GetSummary": [
+    "tổng quan curing",
+    "curing summary",
+    "pass curing",
+    "wip curing",
+    "tình hình curing"
+  ],
+  "GetDisplayedRack": [
+    "rack nào đang hiển thị",
+    "danh sách rack",
+    "curing rack",
+    "tray",
+    "rack đang sấy"
+  ],
+  "GetRackStatus": [
+    "rack running",
+    "rack finished",
+    "trạng thái rack",
+    "rack nào chạy"
+  ],
+  "GetTemperature": [
+    "nhiệt độ",
+    "temperature",
+    "sensor",
+    "pt1",
+    "cảm biến"
+  ]
+}

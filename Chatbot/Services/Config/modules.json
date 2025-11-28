@@ -1,52 +1,55 @@
 [
-  // Curing
   {
-    "Name": "Curing Room (API)",
-    "Database": "CuringRoom",
-    "ApiUrl": "https://10.220.130.117/newweb/api/nvidia/dashboard/CuringMonitor/GetCuringData",
+    "Module": "CuringRoom",
+    "Name": "Curing Room",
     "Keywords": [
-      "tổng quan curing",
-      "pass",
-      "wip",
-      "model pass",
-      "nhiều nhất",
-      "overview curing",
-      "curing dashboard"
-    ],
-    "ServiceType": "api"
-  },
-  {
-    "Name": "Curing Room (SQL)",
-    "Database": "CuringRoom",
-    "ApiUrl": null,
-    "Keywords": [
-      "rack",
+      "curing",
+      "rack curing",
       "tray",
-      "serial",
-      "sensor",
       "nhiệt độ",
-      "trạng thái curing",
-      "curing-",
-      "rack curing"
+      "sensor"
     ],
-    "ServiceType": "sql"
+    "PromptFile": "Services/Modules/NVIDIA_WITCH/CuringRoom/CuringPrompt.txt",
+    "IntentFile": "Services/Modules/NVIDIA_SWITCH/CuringRoom/CuringIntent.json"
   },
-
-  // Rack monitoring
   {
-    "Name": "RackMonitoring(API)",
-    "Database": "Rack",
-    "ApiUrl": "https://10.220.130.117/newweb/api/nvidia/rack/Monitor/GetDataMonitoring",
+    "Module": "RackMonitoring",
+    "Name": "Rack Monitoring",
     "Keywords": [
       "rack",
       "slot",
-      "j_tag",
       "ut",
-      "model pass",
-      "rack status",
-      "rack detail",
-      "slot testing"
+      "j_tag"
     ],
-    "ServiceType": "api"
+    "PromptFile": "Services/Modules/NVIDIA_SWITCH/Rack/RackPrompt.txt",
+    "IntentFile": "Services/Modules/NVIDIA_SWITCH/Rack/RackIntent.json"
+  },
+  {
+    "Module": "Station",
+    "Name": "Station Dashboard",
+    "Keywords": [
+      "station",
+      "trạm",
+      "ict",
+      "ft",
+      "cto",
+
+      "tracking",
+      "tracking chart",
+      "biểu đồ tracking",
+      "chart",
+
+      "yield",
+      "yield trend",
+      "yr",
+      "fpr",
+      "spr",
+
+      "input pass fail",
+      "theo ngày"
+    ],
+    "PromptFile": "Services/Modules/NVIDIA_SWITCH/Station/StationPrompt.txt",
+    "IntentFile": "Services/Modules/NVIDIA_SWITCH/Station/StationIntent.json"
   }
+
 ]

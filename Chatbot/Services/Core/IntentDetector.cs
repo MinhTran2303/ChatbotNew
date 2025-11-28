@@ -11,27 +11,22 @@ namespace Chatbot.Services.Core
             _llm = llm;
         }
 
-        /// <summary>
-        /// Gửi prompt đến Ollama để phân loại ngữ nghĩa
-        /// </summary>
-        public async Task<string> ClassifyAsync(string prompt)
+        // Detect intent in module
+        public async Task<(string module, string intent, string rawJson)> DetectAsync(string prompt)
         {
-            try
-            {
-                string raw = await _llm.GenerateAsync(prompt);
+            string raw = await _llm.GenerateAsync(prompt);
 
-                // Nếu model trả lời không đúng JSON, ta cố gắng trích JSON
-                int jsonStart = raw.IndexOf('{');
-                int jsonEnd = raw.LastIndexOf('}');
-                if (jsonStart >= 0 && jsonEnd > jsonStart)
-                    return raw.Substring(jsonStart, jsonEnd - jsonStart + 1);
+            int s = raw.IndexOf('{');
+            int e = raw.LastIndexOf('}');
+            if (s >= 0 && e > s)
+                raw = raw.Substring(s, e - s + 1);
 
-                return raw;
-            }
-            catch (Exception ex)
-            {
-                return $"{{\"module\":\"\",\"intent\":\"\",\"error\":\"{ex.Message}\"}}";
-            }
+            using var doc = JsonDocument.Parse(raw);
+            string module = doc.RootElement.GetProperty("module").GetString() ?? "";
+            string intent = doc.RootElement.GetProperty("intent").GetString() ?? "";
+
+            return (module, intent, raw);
         }
+
     }
 }

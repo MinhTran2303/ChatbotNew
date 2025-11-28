@@ -1,0 +1,28 @@
+﻿{
+  "Station_Overview": [
+    "tổng quan station",
+    "overview station",
+    "tình hình ict",
+    "ict hôm nay",
+    "ft hôm nay",
+    "cto hôm nay"
+  ],
+  "Station_TopError": [
+    "top error",
+    "lỗi nhiều nhất",
+    "fail code"
+  ],
+  "Station_TrackingChart": [
+    "tracking chart",
+    "input pass fail",
+    "biểu đồ tracking chart",
+    "theo ngày"
+  ],
+  "Station_YieldTrend": [
+    "yield trend",
+    "xu hướng fpr",
+    "spr",
+    "yr",
+    "yield theo ngày"
+  ]
+}

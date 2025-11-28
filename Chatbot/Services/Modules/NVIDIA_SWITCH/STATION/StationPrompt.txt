@@ -1,0 +1,16 @@
+﻿MODULE: Station
+Mô tả: ICT / FT / CTO station tracking – input, pass, fail, fpr, spr, yr.
+Dữ liệu từ API /Station/Dashboard/GetDashboardTrackingData.
+
+INTENT LIST:
+- Station_Overview: tổng quan sản lượng
+- Station_TopError: top lỗi fail
+- Station_TrackingChart: tracking input-pass-fail theo ngày
+- Station_YieldTrend: xu hướng yield – fpr / spr / yr
+
+CÂU HỎI VÍ DỤ:
+- Tổng quan station ICT của SWITCH hôm nay?
+- Tình hình FT SWITCH?
+- Tracking chart ICT tuần trước
+- Yield trend SWITCH hôm nay
+- Top error ICT

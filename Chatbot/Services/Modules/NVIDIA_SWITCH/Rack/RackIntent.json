@@ -1,0 +1,47 @@
+﻿{
+  "RackSummary": [
+    "tổng quan rack",
+    "rack summary",
+    "input rack",
+    "pass rack",
+    "tình hình rack"
+  ],
+  "RackStatus": [
+    "rack nào đang chạy",
+    "rack status",
+    "ut rack",
+    "đang test"
+  ],
+  "RackDetail": [
+    "rack",
+    "rack số",
+    "rack #",
+    "chi tiết rack",
+    "rack [0-9]+",
+    "rack số [0-9]+",
+    "rack #?[0-9]+",
+    "rack number",
+    "rack detail",
+    "rack [0-9]+ ft",
+    "rack [0-9]+ jtag",
+    "rack [0-9]+ f16",
+    "rack [0-9]+ f17"
+  ],
+  "RackSlotStatus": [
+    "slot",
+    "trạng thái slot",
+    "pass slot",
+    "testing slot",
+    "waiting slot"
+  ],
+  "RackPassByModel": [
+    "pass theo model",
+    "model pass nhiều",
+    "model nào pass nhiều"
+  ],
+  "RackUT": [
+    "ut cao nhất",
+    "rack ut",
+    "ut rack nào"
+  ]
+}

@@ -1,0 +1,19 @@
+﻿MODULE: RackMonitoring
+Mô tả: Theo dõi rack J_TAG, slot, model, UT, PCS. Lọc theo Factory/Floor/Room/Model.
+Dữ liệu từ API /Rack/Monitor/GetDataMonitoring.
+
+INTENT LIST:
+- RackSummary: Tổng quan input – pass – fail – yr – fpr
+- RackStatus: Trạng thái rack (PASS/UT/Model đang chạy)
+- RackDetail: Chi tiết rack theo số (rack 3, rack #2)
+- RackSlotStatus: tổng số slot PASS/FAIL/TESTING/WAITING
+- RackPassByModel: model nào pass nhiều nhất
+- RackUT: rack có UT cao nhất
+
+CÂU HỎI VÍ DỤ:
+- Tình hình rack hôm nay?
+- Rack 5 đang test model gì?
+- UT rack cao nhất?
+- Bao nhiêu slot đang waiting?
+- Pass theo model?
+- Rack nào đang chạy model SA005996?

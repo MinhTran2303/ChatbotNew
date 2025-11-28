@@ -1,14 +1,10 @@
-﻿using Chatbot.Services.Core;
-using Chatbot.Services.Modules.CuringRoom;
+﻿using Chatbot.Services.Modules.CuringRoom;
 using Chatbot.Services.Modules.NVIDIA_SWITCH.CuringRoom;
 using Chatbot.Services.Modules.Rack;
-using Chatbot.Services.Rack;
 using Chatbot.Services.Modules.Station;
-using Microsoft.Extensions.Configuration;
+using Chatbot.Services.Rack;
 using Microsoft.Extensions.DependencyInjection;
-using System.Text.Json;
 using System.Text.RegularExpressions;
-using System.Text;
 
 namespace Chatbot.Services.Core
 {
@@ -16,213 +12,133 @@ namespace Chatbot.Services.Core
     {
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly IntentDetector _intentDetector;
-        private readonly IConfiguration _config;
+        private readonly ModulePromptLoader _loader;
 
-        public RouterService(IServiceScopeFactory scopeFactory,
-                             IntentDetector intentDetector,
-                             IConfiguration config)
+        public RouterService(
+            IServiceScopeFactory scopeFactory,
+            IntentDetector intentDetector)
         {
             _scopeFactory = scopeFactory;
             _intentDetector = intentDetector;
-            _config = config;
+            _loader = new ModulePromptLoader();
         }
 
-
-        // ================================================================
-        // 1) MODULE DEFINITIONS — MÔ TẢ CHUẨN
-        // ================================================================
-        private string GetModuleDescription()
-        {
-            return @"
-Bạn là hệ thống ROUTER cho Smart Factory AIOT.
-
-Nhiệm vụ:
-1) Xác định MODULE phù hợp cho câu hỏi của người dùng.
-2) Xác định INTENT bên trong module đó.
-3) Trả về JSON:
-{
-  ""module"": ""TênModule"",
-  ""intent"": ""TênIntent""
-}
-
-====================================================
-📦 MODULE LIST
-====================================================
-
-### **MODULE: CuringRoom**
-Mô tả: Phòng sấy – quản lý rack curing, nhiệt độ, trạng thái, cycle time.
-Intent:
-- GetDisplayedRack: danh sách rack trong phòng sấy
-- GetRackStatus: rack nào đang chạy / đã hoàn thành
-- GetTemperature: nhiệt độ – độ ẩm
-- GetSummary: tổng quan curing room
-
-Ví dụ câu hỏi:
-- Rack curing nào đang chạy?
-- Nhiệt độ phòng sấy hôm nay bao nhiêu?
-- Cho tôi tổng quan curing room
-
-====================================================
-
-### **MODULE: RackMonitoring**
-Mô tả: Dashboard RACK – JTAG/GB200/GB300/Slot.
-Intent:
-- RackSummary: tổng quan rack – số liệu rack ngày hôm nay
-- RackStatus: trạng thái rack đang chạy
-- RackDetail: chi tiết 1 rack (#1/#2)
-- RackSlotStatus: slot WAITING/TESTING/PASS/FAIL
-- RackPassByModel: model nào pass nhiều nhất
-- RackUT: rack nào UT cao nhất
-
-Ví dụ:
-- Tình hình rack hôm nay?
-- Rack 2 đang test model gì?
-- Pass theo model hôm nay?
-
-====================================================
-
-### **MODULE: Station**
-Mô tả: ICT / FT / CTO Station Dashboard (Switch/Adapter).
-Intent:
-- Station_Overview: tổng quan sản lượng – input/pass/fail
-- Station_TopError: top lỗi
-- Station_TrackingChart: input-pass-fail-repair theo ngày
-- Station_YieldTrend: xu hướng yield (FPR/SPR/YR)
-
-Ví dụ:
-- Tổng quan station ICT của SWITCH hôm nay?
-- Cho tôi top error ICT
-- Yield trend FT trong tuần
-- Tracking chart CTO
-
-====================================================
-
-Hãy chọn MODULE phù hợp nhất dựa vào mô tả, không chọn theo từ khóa đơn lẻ nếu không khớp ngữ cảnh.
-            ";
-        }
-
-
-        // =====================================================================
-        // 2) HANDLE USER QUERY
-        // =====================================================================
+        // ===============================================
+        // MAIN ENTRY
+        // ===============================================
         public async Task<string> HandleUserQueryAsync(string message)
         {
-            var (module, intent) = await DetectModule(message);
+            message = Normalize(message);
+
+            // ⚠️ Không detect module bằng keyword nữa
+            // Ta build 1 prompt global để LLM chọn module + intent
+            string globalPrompt = _loader.BuildIntentPromptALL(message);
+
+            // LLM trả về cả module + intent
+            var (module, intent, rawJson) = await _intentDetector.DetectAsync(globalPrompt);
 
             if (string.IsNullOrWhiteSpace(module))
-                return "❓ Tôi không xác định được module phù hợp.";
+                return $"⚠ Không xác định được module: {rawJson}";
+
+            if (string.IsNullOrWhiteSpace(intent))
+                return $"⚠ Không xác định được intent: {rawJson}";
+
+            // Lấy module config
+            var moduleCfg = _loader.GetModule(module);
+            if (moduleCfg == null)
+                return $"⚠ Module '{module}' không tồn tại trong cấu hình.";
 
             using var scope = _scopeFactory.CreateScope();
-            string result = "";
 
-            switch (module)
+            // Điều hướng đến đúng module
+            return module switch
             {
-                // ---------------------- CURING ----------------------
-                case "CuringRoom":
-                    var curingSql = scope.ServiceProvider.GetRequiredService<CuringSqlService>();
-                    var curingApi = scope.ServiceProvider.GetRequiredService<CuringApiService>();
-                    var curingFilter = CuringFilterParser.Parse(message);
-
-                    result = intent switch
-                    {
-                        "GetDisplayedRack" => await curingApi.GetDisplayedRacksAsync(curingFilter),
-                        "GetRackStatus" => await curingApi.GetRackStatusAsync(curingFilter),
-                        "GetTemperature" => await curingSql.GetCuringTemperatureAsync(),
-                        "GetSummary" => await curingApi.GetSummaryAsync(curingFilter),
-                        _ => "⚙️ Intent curing chưa hỗ trợ."
-                    };
-                    break;
-
-                // ---------------------- RACK ----------------------
-                case "RackMonitoring":
-                    var rackApi = scope.ServiceProvider.GetRequiredService<RackApiService>();
-                    var filter = RackFilterParser.Parse(message);
-
-                    result = intent switch
-                    {
-                        "RackSummary" => await rackApi.RackGetSummaryAsync(filter),
-                        "RackStatus" => await rackApi.RackGetStatusAsync(filter),
-                        "RackDetail" => await rackApi.RackGetDetailAsync(ExtractRackName(message), filter),
-                        "RackSlotStatus" => await rackApi.RackGetSlotStatusAsync(filter),
-                        "RackPassByModel" => await rackApi.RackGetPassByModelAsync(filter),
-                        "RackUT" => await rackApi.RackGetUTAsync(filter),
-                        _ => "⚙️ Intent rack chưa hỗ trợ."
-                    };
-                    break;
-
-                // ---------------------- STATION ----------------------
-                case "Station":
-                    var stApi = scope.ServiceProvider.GetRequiredService<StationApiService>();
-                    var stFilter = StationFilterParser.Parse(message);
-
-                    result = intent switch
-                    {
-                        "Station_Overview" => await stApi.StationOverviewAsync(stFilter),
-                        "Station_TopError" => await stApi.StationTopErrorAsync(stFilter),
-                        "Station_TrackingChart" => await stApi.StationTrackingChartAsync(stFilter),
-                        "Station_YieldTrend" => await stApi.StationYieldTrendAsync(stFilter),
-                        _ => "⚙️ Intent station chưa hỗ trợ."
-                    };
-                    break;
-
-                default:
-                    result = $"⚠ Module '{module}' chưa được định nghĩa.";
-                    break;
-            }
-
-            return result;
+                "CuringRoom" => await HandleCuring(message, intent, scope),
+                "RackMonitoring" => await HandleRack(message, intent, scope),
+                "Station" => await HandleStation(message, intent, scope),
+                _ => $"⚠ Module '{module}' chưa hỗ trợ."
+            };
         }
 
 
-        // =====================================================================
-        // 3) DETECT MODULE / INTENT (Module Description Routing)
-        // =====================================================================
-        public async Task<(string Module, string Intent)> DetectModule(string message)
+        // ===============================================
+        // MODULE HANDLERS
+        // ===============================================
+        private async Task<string> HandleCuring(string msg, string intent, IServiceScope scope)
         {
-            string prompt = GetModuleDescription() + $@"
+            var api = scope.ServiceProvider.GetRequiredService<CuringApiService>();
+            var sql = scope.ServiceProvider.GetRequiredService<CuringSqlService>();
+            var filter = CuringFilterParser.Parse(msg);
 
-===============================
-CÂU HỎI NGƯỜI DÙNG:
-{message}
-===============================
-
-Yêu cầu:
-- Chọn module khớp nhất theo đúng mô tả.
-- Chọn intent đúng nhất bên trong module.
-- Trả về JSON:
-{{ ""module"": ""TênModule"", ""intent"": ""TênIntent"" }}
-";
-
-            string res = await _intentDetector.ClassifyAsync(prompt);
-
-            try
+            return intent switch
             {
-                using var doc = JsonDocument.Parse(res);
-                string module = doc.RootElement.GetProperty("module").GetString() ?? "";
-                string intent = doc.RootElement.GetProperty("intent").GetString() ?? "";
-                return (module, intent);
-            }
-            catch
-            {
-                return ("", "");
-            }
+                "GetSummary" => await api.GetSummaryAsync(filter),
+                "GetDisplayedRack" => await api.GetDisplayedRacksAsync(filter),
+                "GetRackStatus" => await api.GetRackStatusAsync(filter),
+                "GetTemperature" => await sql.GetCuringTemperatureAsync(),
+
+                _ => $"⚙ Intent '{intent}' chưa hỗ trợ trong module CuringRoom."
+            };
         }
 
 
-        // =====================================================================
-        // 4) EXTRACT RACK NAME
-        // =====================================================================
-        private string ExtractRackName(string message)
+        private async Task<string> HandleRack(string msg, string intent, IServiceScope scope)
         {
-            message = message.ToLower();
+            var api = scope.ServiceProvider.GetRequiredService<RackApiService>();
+            var filter = RackFilterParser.Parse(msg);
+            var rackNo = ExtractRackNumber(msg);
 
-            var m1 = Regex.Match(message, @"rack\s*(\d+)");
+            return intent switch
+            {
+                "RackSummary" => await api.RackGetSummaryAsync(filter),
+                "RackStatus" => await api.RackGetStatusAsync(filter),
+                "RackDetail" => await api.RackGetDetailAsync(rackNo, filter),
+                "RackSlotStatus" => await api.RackGetSlotStatusAsync(filter),
+                "RackPassByModel" => await api.RackGetPassByModelAsync(filter),
+                "RackUT" => await api.RackGetUTAsync(filter),
+
+                _ => $"⚙ Intent '{intent}' chưa hỗ trợ trong module RackMonitoring."
+            };
+        }
+
+
+        private async Task<string> HandleStation(string msg, string intent, IServiceScope scope)
+        {
+            var api = scope.ServiceProvider.GetRequiredService<StationApiService>();
+            var filter = StationFilterParser.Parse(msg);
+
+            return intent switch
+            {
+                "Station_Overview" => await api.StationOverviewAsync(filter),
+                "Station_TopError" => await api.StationTopErrorAsync(filter),
+                "Station_TrackingChart" => await api.StationTrackingChartAsync(filter),
+                "Station_YieldTrend" => await api.StationYieldTrendAsync(filter),
+
+                _ => $"⚙ Intent '{intent}' chưa hỗ trợ trong module Station."
+            };
+        }
+
+
+        // ===============================================
+        // UTILS
+        // ===============================================
+        private string Normalize(string text)
+        {
+            text = Regex.Replace(text.ToLower(), @"\s+", " ").Trim();
+            return text.Replace("\u00A0", " ");
+        }
+
+        private string ExtractRackNumber(string msg)
+        {
+            msg = msg.ToLower();
+
+            var m1 = Regex.Match(msg, @"rack\s*(\d+)");
             if (m1.Success) return m1.Groups[1].Value;
 
-            var m2 = Regex.Match(message, @"rack\s*số\s*(\d+)");
+            var m2 = Regex.Match(msg, @"rack\s*số\s*(\d+)");
             if (m2.Success) return m2.Groups[1].Value;
 
-            var m3 = Regex.Match(message, @"#(\d+)");
+            var m3 = Regex.Match(msg, @"#(\d+)");
             if (m3.Success) return m3.Groups[1].Value;
 
             return "";
